@@ -10,46 +10,64 @@ var beatme = (function (io) {
     myself.create = function () {
         socket = io.connect("localhost:8080");
         socket.on("connect", function () {
-            //ask for name
-            var playerData = {name: "Player" + (Math.random() * 100)};
-            createPlayer(playerData, onPlayerCreated);
+            myself.onConnected();
+        });
+        socket.on("room_created", function (data) {
+            var roomData = data;
+            var room = new Room();
+            room.name = roomData.name;
+            room.private = roomData.private;
+            room.phase = roomData.phase;
+            room.createdDate = roomData.createdDate;
+            //it's no necessary to load the players info in this instance
+            //room.players = dataRoom.players;
+            room.playersCount = roomData.playersCount;
+            room.maxPlayersCount = roomData.maxPlayersCount;
+            room.available = room.isAvailable();
+            rooms.push(room);
+            myself.onRoomCreated(room);
         });
         socket.on("begin_game", function () {
             startGame();
         });
     };
 
-    function createPlayer(playerData, onPlayerCreated) {
+    function createPlayer(playerData, onPlayerCreated, onError) {
         socket.emit("insert_player_data", {name: playerData.name}, function (response) {
             if (response.status === "okay") {
-                var createdPlayer = new Player(playerData.name);
-                onPlayerCreated(createdPlayer);
+                player = new Player(playerData.name);
+                onPlayerCreated(player);
             } else {
+                if (onError !== undefined) {
+                    onError(response.message);
+                }
                 console.error("The name '" + playerData.name + "' is already in use, try another one.");
             }
         });
     }
 
-    function onPlayerCreated(createdPlayer) {
-        player = createdPlayer;//local to global
-        //ask for rooms
-        console.log("player created");
-        getRooms(function (gettedRooms) {
-            console.log("rooms getted");
-            //here if there is no room at all, so I create a simple one for testing
-            if (gettedRooms.length === 0) {
-                createRoom({name: "Room 1", maxPlayersCount: 2}, function (room) {
-                    //autojoin
-                    console.log("room created");
-                    player.currentRoom = room;
-                });
-            }else{
-                rooms = gettedRooms;
-                //ui
-                //var $room = $('<div></div>');
-            }
-        });
-    }
+    myself.createPlayer = function (playerData, onPlayerCreated, onError) {
+        createPlayer(playerData, onPlayerCreated, onError);
+    };
+
+    myself.onConnected = function () {
+    };
+
+    myself.onRoomCreated = function (room) {
+    };
+
+    /**
+     * For when the current player joins a room
+     * @param {type} room
+     * @returns {undefined}
+     */
+    myself.onJoined = function (room) {
+    };
+
+    //myself.askForPlayers = function(){};
+    myself.askForRooms = function (onRoomsReceived) {
+        getRooms(onRoomsReceived);
+    };
 
     function getRooms(onRoomsReceived) {
         socket.emit("get_rooms", function (response) {
@@ -71,7 +89,6 @@ var beatme = (function (io) {
                     room.available = room.isAvailable();
                     rooms.push(room);
                 }
-                console.log("!");
                 onRoomsReceived(rooms);
             } else {
                 console.error("Error while trying to get the rooms.");
@@ -79,7 +96,7 @@ var beatme = (function (io) {
         });
     }
 
-    function createRoom(roomData, onRoomCreated) {
+    function createRoom(roomData, onRoomCreated, onError) {
         socket.emit("create_room", roomData, function (response) {
             if (response.status === "okay") {
                 //take parameters from server instead of the user setted ones becuase of the security and the server knows how to limit those
@@ -94,27 +111,53 @@ var beatme = (function (io) {
                 room.available = room.isAvailable();
                 rooms.push(room);
                 onRoomCreated(room);
+                myself.onJoined(room);
             } else {
+                if (onError !== undefined) {
+                    var message = response.message;
+                    onError(message);
+                }
                 console.error("Error while trying to create the room '" + name + "'. Choose another name for the room.");
             }
         });
     }
 
+    //public methods
+
+    /**
+     * Creates a room with its data.
+     * After creating the room, the user creator joins automatically.
+     * @param {json} roomData
+     * @returns {undefined}
+     */
+    myself.createRoom = function (roomData, onRoomCreated, onError) {
+        createRoom(roomData, onRoomCreated, onError);
+    };
+
+    /**
+     * Joins to a room given its name.
+     * @param {string} name
+     * @returns {undefined}
+     */
     myself.joinRoom = function (name) {
         //look for deatils of room and join it
         socket.emit("join_room", {name: name}, function (response) {
             if (response.status === "okay") {
                 var roomData = response.data;
-                var currentRoom = new Room();
-                currentRoom.name = roomData.name;
+                var currentRoom = getRoomByName(roomData.name);
                 currentRoom.players = [];
+                console.log(roomData.players);
                 for (var i = 0; i < roomData.players.length; i++) {
-                    var player = new Player();
-                    player.id = roomData.players[i].id;
-                    player.name = roomData.players[i].name;
-                    currentRoom.players.push(player);
+                    var playerData = roomData.players[i];
+                    var otherPlayer = new Player();
+                    otherPlayer.name = playerData.name;
+                    otherPlayer.ready = playerData.ready;
+                    otherPlayer.currentRoom = currentRoom;
+                    currentRoom.addPlayer(otherPlayer);
                 }
-                player.currentRoom = currentRoom;
+                //now join myself
+                //currentRoom.addPlayer(player);
+                myself.onJoined(currentRoom);
                 onGetReadyPhase(currentRoom);
             } else {
                 console.error("Error when trying to get room data for room id '" + roomId + "'.");
@@ -149,6 +192,14 @@ var beatme = (function (io) {
         console.log("Let's play!");
     }
 
+    function getRoomByName(name) {
+        for(var i=0;i<rooms.length;i++){
+            if(rooms[i].name.toLowerCase().trim() === name.trim().toLowerCase()){
+                return rooms[i];
+            }
+        }
+        return null;
+    }
 
     //classes
     function Room() {

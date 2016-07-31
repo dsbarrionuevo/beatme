@@ -13,22 +13,94 @@
     <body>
         <div class="containter">
             <div class="col-sm-2">
-                <h4>Rooms</h4>
-                <form>
-                    <div class="form-group">
-                        <button class="btn btn-primary btn-block">
-                            Create room
-                        </button>
+                <div id='containerRooms'>
+                    <h4>Rooms</h4>
+                    <button class="btn btn-primary btn-block" data-target='#modalCreateRoom' data-toggle='modal'>
+                        Create room
+                    </button>
+                    <br>
+                    <div class="list-group" id='listRooms'>
+                        <a href="#" class="list-group-item itemRoom" data-room-name=''>Room example</a>
                     </div>
-                </form>
-                <div class="list-group">
-                    <a href="#" class="list-group-item">Room 1</a>
+                </div>
+                <div id='containerPlayers'>
+                    <h4>Current room</h4>
+                    <label>
+                        Players
+                    </label>
+                    <div class="list-group" id='listPlayers'>
+                        <a href="#" class="list-group-item">Player</a>
+                    </div>
                 </div>
             </div>
             <div class="col-sm-6">
-                <h4>Game scene</h4>
+                <h4>Game scene
+                    <span id='infoPlayer' class='pull-right'>
+                    </span>
+                </h4>
                 <canvas width="500" height="400" style="border:1px solid gray"></canvas>
             </div>
         </div>
+        <!-- modals -->
+        <!-- modal create room -->
+        <div class="modal fade" id='modalCreateRoom' data-backdrop='static'>
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form>
+                        <div class="modal-header">
+                            <h4 class="modal-title">Create room</h4>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-horizontal">
+                                <div class="form-group">
+                                    <label for="txtRoomName" class="col-sm-2 control-label">Name</label>
+                                    <div class="col-sm-10">
+                                        <input type="text" class="form-control" id="txtRoomName" placeholder="Untitled"/>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="txtMaxPlayers" class="col-sm-2 control-label">Players</label>
+                                    <div class="col-sm-10">
+                                        <input type="text" class="form-control" id="txtMaxPlayers" placeholder="3"/>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="txtRoomPassword" class="col-sm-2 control-label">Password</label>
+                                    <div class="col-sm-10">
+                                        <input type="text" class="form-control" id="txtRoomPassword" placeholder="No password at all" data-trigger='focus' data-toggle="tooltip" data-placement="bottom" title="Setting a password makes the room private"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary" id='btnCreateRoom'>Create</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- /modal create room -->
+        <!-- modal create player -->
+        <div class="modal fade" id='modalInsertPlayerName' data-backdrop='static'>
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form>
+                        <div class="modal-header">
+                            <h4 class="modal-title">Insert your name</h4>
+                        </div>
+                        <div class="modal-body">
+                            <div class='alert alert-info' id='messageForCreatingPlayer'></div>
+                            <input type="text" class="form-control" id="txtInsertPlayerName" placeholder="" autocomplete="off"/>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary" id='btnInsertPlayerName'>Done</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- /modal create player -->
+        <!-- /modals -->
     </body>
 </html>

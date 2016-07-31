@@ -19,7 +19,7 @@ io.on('connection', function (socket) {
             //io.emit("new_player_enter", {data: getPlayerById(socket.client.id)});
             callback({status: "okay"});
         } else {
-            callback({status: "fail"});
+            callback({status: "fail", message: "The name '" + data.name + "' is already token by another player"});
         }
     });
     socket.on("get_rooms", function (callback) {
@@ -53,7 +53,7 @@ io.on('connection', function (socket) {
                 room.addPlayer(getPlayerById(socket.client.id));
                 rooms.push(room);
                 //>>> notice that a new room has been created
-                //io.emit("room_created", {data: room});
+                io.emit("room_created", {data: room});
                 callback({status: "okay", data: room});
             });
         } else {
@@ -62,25 +62,29 @@ io.on('connection', function (socket) {
         }
     });
     socket.on("join_room", function (data, callback) {
-        var playersInRoom = io.sockets.adapter.rooms[data.name].sockets;
-        if (playersInRoom !== undefined) {
-            var room = new Room();
-            room.name = data.name;
-            room.players = [];
-            for (var socketId in playersInRoom) {
-                for (var i = 0; i < clients.length; i++) {
-                    if (clients[i].socket.id === socketId) {
-                        var player = {};
-                        player.id = clients[i].id;
-                        player.name = clients[i].name;
-                        room.players.push(player);
-                        break;
-                    }
-                }
-            }
-            room.playersCount = room.players.length;
+        if (io.sockets.adapter.rooms[data.name] !== undefined) {
+            //must verify that players isnt already in room
+//            var room = new Room();
+//            room.name = data.name;
+//            room.players = [];
+//            for (var socketId in playersInRoom) {
+//                for (var i = 0; i < clients.length; i++) {
+//                    if (clients[i].socket.id === socketId) {
+//                        var player = {};
+//                        player.id = clients[i].id;
+//                        player.name = clients[i].name;
+//                        room.players.push(player);
+//                        break;
+//                    }
+//                }
+//            }
+//            room.playersCount = room.players.length;
             socket.join(data.name, function () {
-                getPlayerById(socket.client.id).currentRoom = room;
+                var room = getRoomByName(data.name);
+                console.log(room);
+                var player = getPlayerById(socket.client.id);
+                console.log(player);
+                room.addPlayer(player);
                 //>>> notice that a room has been changed
                 //io.emit("room_data_changes", {data: room});
                 callback({status: "okay", data: room});
@@ -141,24 +145,30 @@ function getPlayersFromRoom(roomName) {
 }
 
 function getRoomByName(name) {
-    var playersInRoom = io.sockets.adapter.rooms[name].sockets;
-    if (playersInRoom !== undefined) {
-        var room = new Room();
-        room.name = name;
-        room.players = [];
-        for (var socketId in playersInRoom) {
-            for (var i = 0; i < clients.length; i++) {
-                if (clients[i].socket.id === socketId) {
-                    var player = {};
-                    player.id = clients[i].id;
-                    player.name = clients[i].name;
-                    room.players.push(player);
-                    break;
-                }
-            }
+    for (var i = 0; i < rooms.length; i++) {
+        if (rooms[i].name.toLowerCase().trim() === name.trim().toLowerCase()) {
+            return rooms[i];
         }
-        room.playersCount = room.players.length;
     }
+    return null;
+//    var playersInRoom = io.sockets.adapter.rooms[name].sockets;
+//    if (playersInRoom !== undefined) {
+//        var room = new Room();
+//        room.name = name;
+//        room.players = [];
+//        for (var socketId in playersInRoom) {
+//            for (var i = 0; i < clients.length; i++) {
+//                if (clients[i].socket.id === socketId) {
+//                    var player = {};
+//                    player.id = clients[i].id;
+//                    player.name = clients[i].name;
+//                    room.players.push(player);
+//                    break;
+//                }
+//            }
+//        }
+//        room.playersCount = room.players.length;
+//    }
 }
 
 //classes
