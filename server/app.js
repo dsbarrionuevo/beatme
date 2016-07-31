@@ -9,12 +9,14 @@ var rooms = [];
 io.on('connection', function (socket) {
     var newPlayer = new Player();
     newPlayer.id = socket.client.id;
-    newPlayer.socket = socket;
+    //newPlayer.socket = socket;
     newPlayer.name = undefined;
     clients.push(newPlayer);
     socket.on("insert_player_data", function (data, callback) {
         if (!isPlayerNameTaken(data.name) && getPlayerById(socket.client.id) !== null) {
             getPlayerById(socket.client.id).name = data.name;
+            //>>> notice new player (with name assigned)
+            //io.emit("new_player_enter", {data: getPlayerById(socket.client.id)});
             callback({status: "okay"});
         } else {
             callback({status: "fail"});
@@ -44,13 +46,15 @@ io.on('connection', function (socket) {
                 var room = new Room();
                 room.name = data.name;
                 room.available = true;//it's supposed
-                room.private = false;
+                room.private = data.private || false;//hardcode, default is false
                 room.phase = "prepare";
                 room.maxPlayersCount = data.maxPlayersCount || 4;//default
                 room.createdDate = (new Date()).getTime();
                 room.addPlayer(getPlayerById(socket.client.id));
                 rooms.push(room);
-                callback({status: "okay"});
+                //>>> notice that a new room has been created
+                //io.emit("room_created", {data: room});
+                callback({status: "okay", data: room});
             });
         } else {
             //try another room name
@@ -77,6 +81,8 @@ io.on('connection', function (socket) {
             room.playersCount = room.players.length;
             socket.join(data.name, function () {
                 getPlayerById(socket.client.id).currentRoom = room;
+                //>>> notice that a room has been changed
+                //io.emit("room_data_changes", {data: room});
                 callback({status: "okay", data: room});
             });
         } else {
@@ -86,6 +92,8 @@ io.on('connection', function (socket) {
     socket.on("change_ready_state", function (data, callback) {
         if (getPlayerById(socket.client.id) !== null) {
             getPlayerById(socket.client.id).ready = data.ready;
+            //>>> notice that a room has been changed
+            //io.emit("room_data_changes", {data: });
             callback({status: "okay"});
             //now check if the game can start or not
             var room = getPlayerById(socket.client.id).currentRoom;
@@ -96,6 +104,8 @@ io.on('connection', function (socket) {
             }
             if (allReady && playersInRoom.length === room.maxPlayersCount) {
                 //now start!
+                //>>> notice that a room has been changed
+                //io.emit("room_data_changes", {data: });
                 io.to(room.name).emit("begin_game");
             }
         } else {
@@ -167,7 +177,7 @@ function Room() {
         if (!instance.isPlayerInRoom(player)) {
             instance.players.push(player);
             instance.playersCount = instance.players.length;
-            player.currentRoom = instance;
+            player.currentRoomName = instance.name;
         }
     };
     this.isPlayerInRoom = function (player) {
@@ -187,14 +197,14 @@ function Player(name) {
     var instance = this;
     this.id;//socket  client id
     this.name = name;
-    this.socket;
+    //this.socket;
     this.ready;
-    this.currentRoom;
+    this.currentRoomName;
     this.equals = function (other) {
         return (instance.id === other.id);
     };
 }
 
 http.listen(8080, function () {
-    console.log("listening...");
+    console.log("Listening on port 8080...");
 });

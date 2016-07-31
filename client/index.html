@@ -3,12 +3,32 @@
     <head>
         <meta charset="utf-8">
         <title>Beatme</title>
+        <link href="css/bootstrap/css/bootstrap.min.css" rel="stylesheet"/>
         <script src="js/lib/jquery-1.11.3.min.js"></script>
         <script src="js/lib/socket.io-1.4.5.js"></script>
         <script src="js/beatme.js"></script>
+        <script src="css/bootstrap/js/bootstrap.min.js"></script>
         <script src="js/index.js"></script>
     </head>
     <body>
-        <canvas width="500" height="400" style="border:1px solid gray"></canvas>
+        <div class="containter">
+            <div class="col-sm-2">
+                <h4>Rooms</h4>
+                <form>
+                    <div class="form-group">
+                        <button class="btn btn-primary btn-block">
+                            Create room
+                        </button>
+                    </div>
+                </form>
+                <div class="list-group">
+                    <a href="#" class="list-group-item">Room 1</a>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <h4>Game scene</h4>
+                <canvas width="500" height="400" style="border:1px solid gray"></canvas>
+            </div>
+        </div>
     </body>
 </html>

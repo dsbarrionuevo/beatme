@@ -22,29 +22,38 @@ var beatme = (function (io) {
     function createPlayer(playerData, onPlayerCreated) {
         socket.emit("insert_player_data", {name: playerData.name}, function (response) {
             if (response.status === "okay") {
-                var player = new Player(name);
-                onPlayerCreated(player);
+                var createdPlayer = new Player(playerData.name);
+                onPlayerCreated(createdPlayer);
             } else {
-                console.error("The name '" + name + "' is already in use, try another one.");
+                console.error("The name '" + playerData.name + "' is already in use, try another one.");
             }
         });
     }
 
-    function onPlayerCreated(player) {
-        myself.player = player;
+    function onPlayerCreated(createdPlayer) {
+        player = createdPlayer;//local to global
         //ask for rooms
-        getRooms(function (rooms) {
-            if (rooms.length === 0) {
+        console.log("player created");
+        getRooms(function (gettedRooms) {
+            console.log("rooms getted");
+            //here if there is no room at all, so I create a simple one for testing
+            if (gettedRooms.length === 0) {
                 createRoom({name: "Room 1", maxPlayersCount: 2}, function (room) {
                     //autojoin
+                    console.log("room created");
                     player.currentRoom = room;
                 });
+            }else{
+                rooms = gettedRooms;
+                //ui
+                //var $room = $('<div></div>');
             }
         });
     }
 
     function getRooms(onRoomsReceived) {
         socket.emit("get_rooms", function (response) {
+            console.log(response);
             if (response.status === "okay") {
                 var data = response.data;
                 rooms = [];
@@ -62,6 +71,7 @@ var beatme = (function (io) {
                     room.available = room.isAvailable();
                     rooms.push(room);
                 }
+                console.log("!");
                 onRoomsReceived(rooms);
             } else {
                 console.error("Error while trying to get the rooms.");
